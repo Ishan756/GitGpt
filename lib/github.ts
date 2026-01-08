@@ -5,67 +5,86 @@ export const octokit = new Octokit({
 });
 
 export interface FileContent {
-    path: string;
+    filePath: string;
     content: string;
 }
 
-export async function getRepoFiles(
-    owner: string,
-    repo: string,
-    path: string = ''
-): Promise<FileContent[]> {
+const ALLOWED_EXTENSIONS = ['.ts', '.js', '.tsx', '.md', '.json'];
+
+export async function getRepoFiles(owner: string, repo: string): Promise<FileContent[]> {
     try {
-        const { data } = await octokit.repos.getContent({
+        // 1. Get the default branch
+        const { data: repoData } = await octokit.repos.get({ owner, repo });
+        const defaultBranch = repoData.default_branch;
+
+        // 2. Fetch the git tree recursively
+        const { data: treeData } = await octokit.git.getTree({
             owner,
             repo,
-            path,
+            tree_sha: defaultBranch,
+            recursive: 'true',
         });
 
-        let files: FileContent[] = [];
+        if (treeData.truncated) {
+            console.warn('Repository tree is too large and was truncated.');
+        }
 
-        if (Array.isArray(data)) {
-            for (const item of data) {
-                if (item.type === 'file') {
-                    // Skip non-text files or huge files if necessary for simplicity
-                    // For now, let's try to fetch content.
-                    // Note: getContent for file returns base64 encoded content usually.
-                    const fileContent = await fetchFileContent(owner, repo, item.path);
-                    if (fileContent) {
-                        files.push(fileContent);
-                    }
-                } else if (item.type === 'dir') {
-                    const subFiles = await getRepoFiles(owner, repo, item.path);
-                    files = files.concat(subFiles);
+        // 3. Filter files
+        const relevantFiles = treeData.tree.filter((item) => {
+            // Must be a blob (file)
+            if (item.type !== 'blob' || !item.path) return false;
+
+            // Skip node_modules
+            if (item.path.includes('node_modules')) return false;
+
+            // Check extension
+            const hasValidExt = ALLOWED_EXTENSIONS.some((ext) => item.path!.endsWith(ext));
+            return hasValidExt;
+        });
+
+        console.log(`Found ${relevantFiles.length} relevant files`);
+
+        // 4. Fetch content in batches to respect rate limits
+        const results: FileContent[] = [];
+        const BATCH_SIZE = 10;
+
+        for (let i = 0; i < relevantFiles.length; i += BATCH_SIZE) {
+            const batch = relevantFiles.slice(i, i + BATCH_SIZE);
+
+            const batchPromises = batch.map(async (file) => {
+                try {
+                    // Check file size limit if provided in tree (item.size), optional safety
+                    // For now, straightforward fetch
+                    const { data } = await octokit.git.getBlob({
+                        owner,
+                        repo,
+                        file_sha: file.sha!,
+                    });
+
+                    // Git blob content is base64 encoded
+                    const content = Buffer.from(data.content, 'base64').toString('utf-8');
+
+                    return {
+                        filePath: file.path!,
+                        content,
+                    };
+                } catch (error) {
+                    console.error(`Error fetching file: ${file.path}`, error);
+                    return null;
                 }
-            }
+            });
+
+            const batchResults = await Promise.all(batchPromises);
+
+            batchResults.forEach((res) => {
+                if (res) results.push(res);
+            });
         }
 
-        return files;
-    } catch (error) {
-        console.error(`Error fetching repo content for ${owner}/${repo}/${path}:`, error);
-        return [];
-    }
-}
+        return results;
 
-async function fetchFileContent(owner: string, repo: string, path: string): Promise<FileContent | null> {
-    try {
-        const { data } = await octokit.repos.getContent({
-            owner,
-            repo,
-            path
-        });
-
-        if (!Array.isArray(data) && data.type === 'file' && data.content) {
-            // Content is base64 encoded
-            const content = Buffer.from(data.content, 'base64').toString('utf-8');
-            return {
-                path,
-                content
-            };
-        }
-        return null;
     } catch (error) {
-        console.error(`Error fetching file content for ${path}:`, error);
-        return null;
+        console.error('Error in getRepoFiles:', error);
+        throw error;
     }
 }

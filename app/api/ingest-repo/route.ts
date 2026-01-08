@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRepoFiles } from '@/lib/github';
 import { supabase } from '@/lib/supabase';
-import { embeddings } from '@/lib/embeddings';
+import { processAndStoreRepo } from '@/lib/embeddings';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
 
@@ -30,45 +30,15 @@ export async function POST(req: NextRequest) {
 
         console.log(`Found ${files.length} files.`);
 
-        // Split text into chunks
-        const splitter = new RecursiveCharacterTextSplitter({
-            chunkSize: 1000,
-            chunkOverlap: 200,
-        });
+        console.log(`Found ${files.length} files.`);
 
-        const docs = [];
-        for (const file of files) {
-            const chunks = await splitter.createDocuments(
-                [file.content],
-                [{ source: file.path, repository: `${owner}/${repo}` }]
-            );
-            docs.push(...chunks);
+        // Process and store using the helper
+        try {
+            const chunkCount = await processAndStoreRepo(`${owner}/${repo}`, files);
+            return NextResponse.json({ success: true, message: `Ingested ${chunkCount} chunks` });
+        } catch (err: any) {
+            throw new Error(`Processing failed: ${err.message}`);
         }
-
-        console.log(`Generated ${docs.length} chunks.`);
-
-        // Generate embeddings
-        const texts = docs.map(d => d.pageContent);
-        const embeddingValues = await embeddings.embedDocuments(texts);
-
-        // Prepare rows for insertion
-        const rows = docs.map((d, i) => ({
-            repo: `${owner}/${repo}`,
-            file_path: d.metadata.source,
-            content: d.pageContent,
-            embedding: embeddingValues[i]
-        }));
-
-        // Store in Supabase 'repo_embeddings' table
-        const { error } = await supabase
-            .from('repo_embeddings')
-            .insert(rows);
-
-        if (error) {
-            throw error;
-        }
-
-        return NextResponse.json({ success: true, message: `Ingested ${docs.length} chunks` });
 
     } catch (error: any) {
         console.error('Ingestion error:', error);
