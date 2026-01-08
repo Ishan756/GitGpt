@@ -1,10 +1,10 @@
-import { OpenAIEmbeddings } from '@langchain/openai';
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { supabase } from './supabase';
 
-// Initialize embeddings (assumes OPENAI_API_KEY is in env)
-export const embeddings = new OpenAIEmbeddings({
-    modelName: 'text-embedding-3-small',
+// Initialize embeddings (assumes GOOGLE_API_KEY is in env)
+export const embeddings = new GoogleGenerativeAIEmbeddings({
+    model: "text-embedding-004", // Latest Google embedding model
 });
 
 // Splitter configuration

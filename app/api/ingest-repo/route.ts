@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRepoFiles } from '@/lib/github';
-import { supabase } from '@/lib/supabase';
 import { processAndStoreRepo } from '@/lib/embeddings';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
 
 export const runtime = 'nodejs'; // GitHub API might be slow, nodejs runtime is safer for timeouts than edge
 

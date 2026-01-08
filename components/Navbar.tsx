@@ -1,21 +1,10 @@
-"use client";
+'use client';
 
-import { cn } from "@/utils/cn";
-import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
-import Link from "next/link";
-
-export const ActiveLink = (props: { href: string; children: ReactNode }) => {
-  const pathname = usePathname();
+export default function Navbar() {
   return (
-    <Link
-      href={props.href}
-      className={cn(
-        "px-4 py-2 rounded-[18px] whitespace-nowrap flex items-center gap-2 text-sm transition-all",
-        pathname === props.href && "bg-primary text-primary-foreground",
-      )}
-    >
-      {props.children}
-    </Link>
+    <nav className="w-full flex items-center justify-between px-8 py-4 bg-zinc-950 border-b border-zinc-800">
+      <h1 className="text-xl font-bold text-zinc-100 tracking-tight">RepoChat</h1>
+      <span className="text-sm text-zinc-500 font-medium">AI-Powered Code Analysis</span>
+    </nav>
   );
-};
+}
