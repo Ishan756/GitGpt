@@ -47,17 +47,26 @@ export async function POST(req: NextRequest) {
 
         console.log(`Generated ${docs.length} chunks.`);
 
-        // Store in Supabase
-        // Note: This relies on the table 'documents' existing with appropriate schema
-        await SupabaseVectorStore.fromDocuments(
-            docs,
-            embeddings,
-            {
-                client: supabase,
-                tableName: 'documents',
-                queryName: 'match_documents'
-            }
-        );
+        // Generate embeddings
+        const texts = docs.map(d => d.pageContent);
+        const embeddingValues = await embeddings.embedDocuments(texts);
+
+        // Prepare rows for insertion
+        const rows = docs.map((d, i) => ({
+            repo: `${owner}/${repo}`,
+            file_path: d.metadata.source,
+            content: d.pageContent,
+            embedding: embeddingValues[i]
+        }));
+
+        // Store in Supabase 'repo_embeddings' table
+        const { error } = await supabase
+            .from('repo_embeddings')
+            .insert(rows);
+
+        if (error) {
+            throw error;
+        }
 
         return NextResponse.json({ success: true, message: `Ingested ${docs.length} chunks` });
 
