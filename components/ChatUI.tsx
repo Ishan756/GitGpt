@@ -64,7 +64,12 @@ export default function ChatUI({ repoName }: Props) {
                 }),
             });
 
-            if (!response.ok) throw new Error('Failed to get response');
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Chat error details:', errorData);
+                throw new Error(errorData.error || 'Failed to get response');
+            }
+
             if (!response.body) throw new Error('No response body');
 
             // Setup streaming (handling text stream appropriately)
@@ -119,8 +124,8 @@ export default function ChatUI({ repoName }: Props) {
                     >
                         <div
                             className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm leading-relaxed ${m.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded-br-sm'
-                                    : 'bg-zinc-800 text-zinc-200 rounded-bl-sm'
+                                ? 'bg-blue-600 text-white rounded-br-sm'
+                                : 'bg-zinc-800 text-zinc-200 rounded-bl-sm'
                                 }`}
                         >
                             <div className="whitespace-pre-wrap">{m.content}</div>

@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 // Initialize embeddings (assumes GOOGLE_API_KEY is in env)
 export const embeddings = new GoogleGenerativeAIEmbeddings({
     model: "text-embedding-004", // Latest Google embedding model
+    apiKey: process.env.GOOGLE_API_KEY
 });
 
 // Splitter configuration
