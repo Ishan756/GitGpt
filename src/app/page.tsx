@@ -17,7 +17,7 @@ export default async function ChatPage({
 
     const settings = await db.storeSettings.findFirst();
 
-    if (!settings?.openAiKey || !settings?.githubAccessToken) {
+    if (!settings?.githubAccessToken) {
         return redirect('/settings');
     }
 

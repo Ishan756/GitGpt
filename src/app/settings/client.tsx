@@ -54,17 +54,16 @@ export function ConfigurationForm(props: ConfigurationFormProps) {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="openai-key">OpenAI API Key</Label>
+                <Label htmlFor="openai-key">Gemini API Key</Label>
                 <div className="relative">
                     <Input
                         id="openai-key"
                         type={showOpenAIKey ? "text" : "password"}
-                        placeholder="Enter your OpenAI API key"
+                        placeholder="Enter your Gemini API key"
                         value={openAiKey}
                         onChange={(e) => setOpenAiKey(e.target.value)}
                         className="bg-beige-50 border-beige-300 pr-10"
-                        required
-                        minLength={32}
+                        minLength={0}
                     />
                     <Button
                         type="button"
@@ -78,15 +77,9 @@ export function ConfigurationForm(props: ConfigurationFormProps) {
                             <EyeIcon className="h-4 w-4"/>}
                     </Button>
                 </div>
-                <p className="text-sm text-beige-700">OpenAI key is
-                    needed for indexing and requests. Your OpenAI API
-                    key will be stored securely on your device.</p>
-                <p className="text-sm text-beige-700">To get your OpenAI
-                    API key, visit <a
-                        href="https://platform.openai.com/account/api-keys"
-                        target="_blank" rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline">OpenAI
-                        API Keys</a>.</p>
+                <p className="text-sm text-beige-700">This key is optional.
+                    Leave it blank if you only want local embeddings for importing.
+                    Add a key later only if you want chat or remote model features.</p>
             </div>
 
             <div className="space-y-2">

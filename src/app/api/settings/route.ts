@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
             githubAccessToken: string;
         };
 
-        if (!openAiKey || !githubAccessToken) {
-            throw new Error("OpenAI and GitHub keys are required");
+            if (!githubAccessToken) {
+                throw new Error("GitHub key is required");
         }
 
         const db = new PrismaClient();
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
                 githubAccessToken,
             },
             create: {
-                openAiKey,
+                    openAiKey: openAiKey ?? "",
                 githubAccessToken
             }
         });

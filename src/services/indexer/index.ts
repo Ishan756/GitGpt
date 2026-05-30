@@ -2,9 +2,8 @@ import {
     GithubRepoLoader
 } from "@langchain/community/document_loaders/web/github";
 import {RecursiveCharacterTextSplitter} from "langchain/text_splitter";
-import {OpenAIEmbeddings} from "@langchain/openai";
 import {PrismaVectorStore} from "@langchain/community/vectorstores/prisma";
-import {Prisma, RepositoryStatus, PrismaClient, Document} from "@prisma/client";
+import {Prisma, PrismaClient} from "@prisma/client";
 import {Document as LangchainDocument} from "langchain/document"; // Adjust the import path if necessary
 import prisma from '@/lib/prisma';
 
@@ -66,7 +65,7 @@ export class Indexer {
                 },
                 data: {
                     error: (error as Error).message,
-                    status: RepositoryStatus.ERROR
+                    status: "ERROR"
                 }
             }).then(() => {
                 console.error(`[${new Date().toISOString()}] Error during indexing for repository ID ${repoId}:`, error);
@@ -184,17 +183,49 @@ export class Indexer {
      */
     private async storeChunks(chunks: LangchainDocument[], namespace: string, repoUrl: string) {
         console.log(`[${new Date().toISOString()}] Storing ${chunks.length} chunks into the vector store`);
+        class LocalEmbeddings {
+            private static extractorPromise: Promise<unknown> | null = null;
 
-        const openAiKey = await this.getOpenAiToken();
-        const embeddings = new OpenAIEmbeddings({
-            model: "text-embedding-3-small",
-            apiKey: openAiKey,
-        });
+            private async getExtractor() {
+                if (!LocalEmbeddings.extractorPromise) {
+                    LocalEmbeddings.extractorPromise = import('@xenova/transformers').then(async ({ pipeline }) => {
+                        return pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+                    });
+                }
 
-        const vectorStore = PrismaVectorStore.withModel<Document>(this.db).create(
+                return LocalEmbeddings.extractorPromise;
+            }
+
+            async embedDocuments(documents: string[]) {
+                const extractor = await this.getExtractor() as (text: string, options: { pooling: 'mean'; normalize: boolean; return_tensors: false }) => Promise<any>;
+                const embeddings: number[][] = [];
+
+                for (const document of documents) {
+                    const output = await extractor(document, {
+                        pooling: 'mean',
+                        normalize: true,
+                        return_tensors: false,
+                    });
+
+                    const vector = Array.isArray(output) ? output[0] : output?.data?.[0] ?? output?.output?.[0] ?? output;
+                    embeddings.push(Array.isArray(vector) ? vector : []);
+                }
+
+                return embeddings;
+            }
+
+            async embedQuery(query: string) {
+                const embeddings = await this.embedDocuments([query]);
+                return embeddings[0] ?? [];
+            }
+        }
+
+        const embeddings = new LocalEmbeddings();
+
+        const vectorStore = PrismaVectorStore.withModel(this.db).create(
             embeddings,
             {
-                prisma: Prisma,
+                prisma: Prisma as never,
                 tableName: "Document",
                 vectorColumnName: "vector",
                 columns: {
@@ -231,7 +262,7 @@ export class Indexer {
             // Update the repository status using repoUrl
             await this.db.repository.update({
                 where: {url: repoUrl},
-                data: {status: RepositoryStatus.IMPORTED, error: null}
+                data: {status: "IMPORTED", error: null}
             });
             console.log(`[${new Date().toISOString()}] Updated repository status to IMPORTED for URL: ${repoUrl}`);
         } catch (error) {
@@ -240,7 +271,7 @@ export class Indexer {
             // Update the repository status to NOT_STARTED in case of error
             await this.db.repository.update({
                 where: {url: repoUrl},
-                data: {status: RepositoryStatus.NOT_STARTED}
+                data: {status: "NOT_STARTED"}
             });
             console.log(`[${new Date().toISOString()}] Updated repository status to NOT_STARTED for URL: ${repoUrl}`);
 

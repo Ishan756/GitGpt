@@ -2,9 +2,9 @@
 
 import {useEffect, useState} from "react";
 import {useChat} from 'ai/react';
-import {Repository} from '@prisma/client'
 import {MessageList} from '@/components/message-list';
 import {MessageInput} from '@/components/message-input';
+import type {Repository} from '@/lib/types';
 
 interface ChatProps {
     defaultRepoId?: string,

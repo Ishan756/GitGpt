@@ -6,7 +6,7 @@ import {SystemMessagePromptTemplate} from "@langchain/core/prompts";
 import {RunnablePassthrough, RunnableSequence} from "@langchain/core/runnables";
 import {HttpResponseOutputParser} from "langchain/output_parsers";
 import {PrismaVectorStore} from "@langchain/community/vectorstores/prisma";
-import {Document, Prisma, PrismaClient} from "@prisma/client";
+import {Prisma, PrismaClient} from "@prisma/client";
 import {formatDocumentsAsString} from "langchain/util/document";
 
 const formatMessage = (message: VercelChatMessage) => {
@@ -49,10 +49,10 @@ export async function POST(req: NextRequest) {
             apiKey
         });
 
-        const vectorStore = PrismaVectorStore.withModel<Document>(db).create(
+        const vectorStore = PrismaVectorStore.withModel(db).create(
             embeddings,
             {
-                prisma: Prisma,
+                prisma: Prisma as never,
                 tableName: "Document",
                 vectorColumnName: "vector",
                 columns: {

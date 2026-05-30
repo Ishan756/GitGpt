@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
 import {Send} from 'lucide-react';
-import {Repository} from "@prisma/client";
+import type {Repository} from "@/lib/types";
 
 interface MessageInputProps {
     input: string;

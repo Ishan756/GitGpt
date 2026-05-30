@@ -9,7 +9,7 @@ export default async function ReposPage() {
 
     const settings = await  db.storeSettings.findFirst();
 
-    if(!settings?.openAiKey || !settings?.githubAccessToken) {
+    if(!settings?.githubAccessToken) {
         redirect('/settings');
     }
 

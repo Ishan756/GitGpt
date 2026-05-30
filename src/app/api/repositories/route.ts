@@ -1,5 +1,5 @@
 import {NextRequest, NextResponse} from "next/server";
-import {PrismaClient, RepositoryStatus} from "@prisma/client";
+import {PrismaClient} from "@prisma/client";
 import {Indexer} from '@/services/indexer';
 
 export async function POST(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
             data: {
                 name,
                 url,
-                status: RepositoryStatus.LOADING,
+                status: "LOADING",
             },
         })
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
             success: true, repository: {
                 name,
                 url,
-                status: RepositoryStatus.LOADING,
+                status: "LOADING",
             }
         });
 

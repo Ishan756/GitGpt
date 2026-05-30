@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react'
-import {Repository, RepositoryStatus} from '@prisma/client'
 import {Import} from './import'
 import {List} from './list'
+import type {Repository} from '@/lib/types';
 
 interface RepoPageProps {
     list: Repository[]
@@ -22,7 +22,7 @@ export function RepoPage(props: RepoPageProps) {
 
         const repositories = data.repositories as Repository[];
 
-        const hasLoading = repositories.some(repo => repo.status === RepositoryStatus.LOADING);
+        const hasLoading = repositories.some(repo => repo.status === "LOADING");
 
         if (hasLoading) {
             setTimeout(fetchRepos, 3000);
