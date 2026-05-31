@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from "next/server";
 import {PrismaClient} from "@prisma/client";
-import {Indexer} from '@/services/indexer';
 
 export async function POST(req: NextRequest) {
     const db = new PrismaClient();
@@ -31,9 +30,13 @@ export async function POST(req: NextRequest) {
             },
         })
 
-        const indexer = new Indexer();
+        // Lazy-load the Indexer to avoid importing heavy modules at build-time
+        // (this prevents Next.js from failing to collect page data during build).
+        const IndexerModule = await import('@/services/indexer');
+        const indexer = new IndexerModule.Indexer();
 
-        indexer.run(repository.id, branch);
+        // Run indexing in background (don't await) so the request returns quickly.
+        indexer.run(repository.id, branch).catch(err => console.error('Indexer error:', err));
 
         return NextResponse.json({
             success: true, repository: {
