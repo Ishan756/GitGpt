@@ -26,16 +26,17 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
     }
 
     return (
-        <div className="overflow-y-auto mb-4 p-6 rounded-lg border border-gray-300 lg:max-w-3xl lg:mx-auto">
-            <div className="flex flex-col gap-2 ">
+        <div className="mx-auto max-w-5xl overflow-y-auto rounded-[1.75rem] border border-border/70 bg-white/75 p-4 shadow-[0_14px_50px_rgba(0,0,0,0.06)] backdrop-blur-sm sm:p-6">
+            <div className="flex flex-col gap-3">
                 {messages.map((message) => (
                     <Message key={message.id} id={message.id} role={message.role} content={message.content} />
                 ))}
                 <div ref={messagesEndRef} />
             </div>
             {isLoading && (
-                <div className="text-center mt-4">
-                    <span className="inline-block p-3 rounded-lg bg-gray-200 text-gray-800 shadow-md">
+                <div className="mt-5 text-center">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                         AI is thinking...
                     </span>
                 </div>

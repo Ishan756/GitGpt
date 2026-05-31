@@ -4,11 +4,29 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(179, 136, 101, 0.18), transparent 32%),
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.55), transparent 18%),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.7s ease-out both;
+  }
+
+  .animate-soft-pulse {
+    animation: soft-pulse 7s ease-in-out infinite;
+  }
+
+  .chat-glass {
+    background: color-mix(in srgb, hsl(var(--background)) 82%, white 18%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
 }
 
@@ -78,5 +96,27 @@ body {
 
   html, body {
     height: 100%;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes soft-pulse {
+    0%, 100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.03);
+    }
   }
 }

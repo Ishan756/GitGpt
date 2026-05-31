@@ -22,10 +22,10 @@ export default function RootLayout({
 }>) {
     return (
         <html suppressHydrationWarning lang="en">
-        <body className={`${poppins.className} antialiased beige-100 text-beige-900`}>
+        <body className={`${poppins.className} antialiased beige-100 text-beige-900 min-h-screen overflow-y-auto`}>
         <ThemeProvider attribute="class">
             <Header />
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:pt-20 h-full">
+            <main className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8 lg:pt-20 min-h-[calc(100vh-4rem)]">
                 {children}
             </main>
             <Toaster />
