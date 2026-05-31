@@ -12,7 +12,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import {Loader2, CheckCircle, Trash2, MessageSquare} from 'lucide-react'
+import {Loader2, Trash2, MessageSquare, GitBranch} from 'lucide-react'
 import type {Repository} from '@/lib/types'
 
 interface ListProps {
