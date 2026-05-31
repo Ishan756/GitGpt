@@ -54,12 +54,12 @@ export function ConfigurationForm(props: ConfigurationFormProps) {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="openai-key">Gemini API Key</Label>
+                <Label htmlFor="openai-key">Gemini API Key (optional)</Label>
                 <div className="relative">
                     <Input
                         id="openai-key"
                         type={showOpenAIKey ? "text" : "password"}
-                        placeholder="Enter your Gemini API key"
+                        placeholder="Enter your Gemini API key for chat"
                         value={openAiKey}
                         onChange={(e) => setOpenAiKey(e.target.value)}
                         className="bg-beige-50 border-beige-300 pr-10"
@@ -77,9 +77,8 @@ export function ConfigurationForm(props: ConfigurationFormProps) {
                             <EyeIcon className="h-4 w-4"/>}
                     </Button>
                 </div>
-                <p className="text-sm text-beige-700">This key is optional.
-                    Leave it blank if you only want local embeddings for importing.
-                    Add a key later only if you want chat or remote model features.</p>
+                <p className="text-sm text-beige-700">Leave this blank if you only want local imports.
+                    Add your Gemini key here when you want the chat assistant to generate replies.</p>
             </div>
 
             <div className="space-y-2">

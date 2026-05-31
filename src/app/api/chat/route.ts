@@ -1,13 +1,9 @@
 import {NextRequest, NextResponse} from "next/server";
 import {Message as VercelChatMessage} from "ai";
-
-import {ChatOpenAI, OpenAIEmbeddings} from "@langchain/openai";
-import {SystemMessagePromptTemplate} from "@langchain/core/prompts";
-import {RunnablePassthrough, RunnableSequence} from "@langchain/core/runnables";
-import {HttpResponseOutputParser} from "langchain/output_parsers";
 import {PrismaVectorStore} from "@langchain/community/vectorstores/prisma";
 import {Prisma, PrismaClient} from "@prisma/client";
 import {formatDocumentsAsString} from "langchain/util/document";
+import {LocalEmbeddings} from "@/lib/local-embeddings";
 
 const formatMessage = (message: VercelChatMessage) => {
     return `${message.role}: ${message.content}`;
@@ -19,35 +15,26 @@ export async function POST(req: NextRequest) {
 
         const messages = body.messages ?? [];
         const repositoryId = body.selectedRepoId;
-        const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
-        const currentMessageContent = messages[messages.length - 1].content;
+        const currentMessageContent = messages[messages.length - 1]?.content ?? "";
         const db = new PrismaClient();
 
-        const apiKey = (await db.storeSettings.findFirst())?.openAiKey;
+        const settings = await db.storeSettings.findFirst({
+            orderBy: {createdAt: 'desc'}
+        });
+
+        const geminiApiKey = settings?.openAiKey;
+
         const repository = await db.repository.findUnique({
             where: {
                 id: repositoryId
             }
         });
 
-        if (!apiKey) {
-            throw new Error("OpenAI API key is required");
-        }
-
         if (!repository) {
             throw new Error("Repository not found");
         }
 
-        const llm = new ChatOpenAI({
-            model: "gpt-4o-mini",
-            temperature: 0,
-            apiKey
-        });
-
-        const embeddings = new OpenAIEmbeddings({
-            model: "text-embedding-3-small",
-            apiKey
-        });
+        const embeddings = new LocalEmbeddings();
 
         const vectorStore = PrismaVectorStore.withModel(db).create(
             embeddings,
@@ -73,43 +60,60 @@ export async function POST(req: NextRequest) {
             searchType: "similarity"
         });
 
-        const systemPrompt = SystemMessagePromptTemplate.fromTemplate(`
-  You are a helpful assistant with good knowledge in coding. Use the provided context and previous conversation to answer user questions with detailed explanations.
-  Read the given context before answering questions and think step by step. If you cannot answer a user question based on the provided context, inform the user. Do not use any other information for answering.
+        const docs = await retriever.invoke(currentMessageContent as string);
+        const context = formatDocumentsAsString(docs as never);
 
-  Context: {context}
+        if (!geminiApiKey) {
+            const responseText = context.length > 0
+                ? `No Gemini API key is configured, so here's the most relevant repository context I found:\n\n${context}`
+                : "No relevant context found in the repository yet.";
 
-  Conversation History:
-  {chat_history}
-
-  User: {question}
-  `);
-
-        const chain = RunnableSequence.from([
-            RunnablePassthrough.assign({
-                context: async (input) => {
-                    return await retriever.pipe(formatDocumentsAsString).invoke(input.question as string);
+            return new Response(responseText, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'text/plain; charset=utf-8',
                 },
-                question: async (input) => {
-                    return input.question;
+            });
+        }
+
+        const messagesForGemini = [
+            {
+                role: "user",
+                parts: [{ text: `You are RepoGPT. Answer using only the repository context below. If the answer is not in the context, say you could not find it.\n\nRepository context:\n${context || 'No relevant context found.'}` }]
+            },
+            ...messages.map((message: VercelChatMessage) => ({
+                role: message.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: String(message.content ?? '') }]
+            }))
+        ];
+
+        const response = await fetch(
+            'https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': geminiApiKey,
                 },
-                chat_history: async (input, {
-                    metadata: {}
-                }) => {
-                    return input.chat_history || [];
-                }
-            }),
-            systemPrompt,
-            llm,
-            new HttpResponseOutputParser(),
-        ]);
+                body: JSON.stringify({
+                    contents: messagesForGemini,
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 1024,
+                    }
+                })
+            }
+        );
 
-        const stream = await chain.stream({
-            chat_history: formattedPreviousMessages.join("\n"),
-            question: currentMessageContent,
-        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Gemini chat request failed: ${response.status} ${errorText}`);
+        }
 
-        return new Response(stream, {
+        const json = await response.json();
+        const answer = json?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
+
+        return new Response(answer || 'No response was returned by Gemini.', {
             status: 200,
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',

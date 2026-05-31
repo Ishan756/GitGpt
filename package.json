@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -20,6 +20,7 @@
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
+    "@xenova/transformers": "^2.17.2",
     "ai": "^3.4.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -28,7 +29,6 @@
     "lucide-react": "^0.445.0",
     "next": "14.2.13",
     "next-themes": "^0.3.0",
-    "@xenova/transformers": "^2.17.2",
     "prisma": "^5.20.0",
     "react": "^18",
     "react-dom": "^18",
@@ -42,6 +42,7 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.13",
+    "node-loader": "^2.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"

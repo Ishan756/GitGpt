@@ -6,6 +6,7 @@ import {PrismaVectorStore} from "@langchain/community/vectorstores/prisma";
 import {Prisma, PrismaClient} from "@prisma/client";
 import {Document as LangchainDocument} from "langchain/document"; // Adjust the import path if necessary
 import prisma from '@/lib/prisma';
+import {LocalEmbeddings} from '@/lib/local-embeddings';
 
 /**
  * List of paths to ignore when loading documents from GitHub repositories.
@@ -183,43 +184,6 @@ export class Indexer {
      */
     private async storeChunks(chunks: LangchainDocument[], namespace: string, repoUrl: string) {
         console.log(`[${new Date().toISOString()}] Storing ${chunks.length} chunks into the vector store`);
-        class LocalEmbeddings {
-            private static extractorPromise: Promise<unknown> | null = null;
-
-            private async getExtractor() {
-                if (!LocalEmbeddings.extractorPromise) {
-                    LocalEmbeddings.extractorPromise = import('@xenova/transformers').then(async ({ pipeline }) => {
-                        return pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-                    });
-                }
-
-                return LocalEmbeddings.extractorPromise;
-            }
-
-            async embedDocuments(documents: string[]) {
-                const extractor = await this.getExtractor() as (text: string, options: { pooling: 'mean'; normalize: boolean; return_tensors: false }) => Promise<any>;
-                const embeddings: number[][] = [];
-
-                for (const document of documents) {
-                    const output = await extractor(document, {
-                        pooling: 'mean',
-                        normalize: true,
-                        return_tensors: false,
-                    });
-
-                    const vector = Array.isArray(output) ? output[0] : output?.data?.[0] ?? output?.output?.[0] ?? output;
-                    embeddings.push(Array.isArray(vector) ? vector : []);
-                }
-
-                return embeddings;
-            }
-
-            async embedQuery(query: string) {
-                const embeddings = await this.embedDocuments([query]);
-                return embeddings[0] ?? [];
-            }
-        }
-
         const embeddings = new LocalEmbeddings();
 
         const vectorStore = PrismaVectorStore.withModel(this.db).create(
