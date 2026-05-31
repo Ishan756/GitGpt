@@ -5,10 +5,6 @@ import {Prisma, PrismaClient} from "@prisma/client";
 import {formatDocumentsAsString} from "langchain/util/document";
 import {LocalEmbeddings} from "@/lib/local-embeddings";
 
-const formatMessage = (message: VercelChatMessage) => {
-    return `${message.role}: ${message.content}`;
-};
-
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
