@@ -1,6 +1,6 @@
 # RepoGPT
 
-RepoGPT is a Next.js app for chatting with GitHub repositories after importing them into a PostgreSQL + pgvector database.
+RepoGPT is a Next.js app for chatting with GitHub repositories after importing them into a PostgreSQL + pgvector database..
 
 ## Setup
 
